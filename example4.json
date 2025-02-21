@@ -1,0 +1,79 @@
+{"customer-1": {
+    "body": {
+        "fontFamily": "Georgia, Arial, Helvetica, Sans-serif, serif",
+        "fontSize": "15px",
+        "color": "#000",
+        "background": "#fff"
+    },
+    "h1": {
+        "fontSize": "50px"
+    },
+    "h3": {
+        "fontSize": "22px"
+    },
+    "contentWrapper": {
+        "width": {"left" : "960px",
+                    "right" : "960px"},
+        "textAlign": "left",
+        "margin": "0 auto",
+        "background": "#fff",
+        "padding": "15px"
+    },
+    "header": {
+        "width": "960px",
+        "height": "120px"
+    },
+    "postContent": {
+        "float": "left",
+        "width": "600px",
+        "padding": "0 15px 15px 15px"
+    },
+    ".sidebar": {
+        "float": "left",
+        "width": "300px",
+        "margin": "0 0 0 15px",
+        "fontSize": "15px",
+        "listStyleType":"none"
+    },
+    "footer": {
+        "height": "60px",
+          "background": "#fff",
+          "padding": "15px",
+          "clear": "both"
+      }
+},
+"customer-2": {
+    "body": {
+        "fontFamily": "Georgia, Arial, Helvetica, Sans-serif, serif",
+        "fontSize": "15px",
+        "color": "#000",
+        "background": "#fff"
+    },
+    "h1": {
+        "fontSize": "50px"
+    },
+    "h3": {
+        "fontSize": "22px"
+    },
+    "contentWrapper": {
+        "width": "960px",
+        "textAlign": "left",
+        "margin": "0 auto",
+        "background": "#fff",
+        "padding": "15px"
+    },
+    ".sidebar": {
+        "float": "left",
+        "width": "300px",
+        "margin": "0 0 0 15px",
+        "fontSize": "15px",
+        "listStyleType":"none"
+    },
+    "footer": {
+        "height": "60px",
+          "background": "#fff",
+          "padding": "15px",
+          "clear": "both"
+      }
+}
+}
