@@ -9,14 +9,23 @@ st.title("jsonalyzer")
 
 # Uploading the file
 st.header("Upload JSON File")
+
 st.file_uploader("", key="json_input")
 json_input = st.session_state.get("json_input", None)
+json_file = None
+if json_input is None:
+    st.pills('or load a dummy file..',options=[i for i in range(1,5)],key='chosen_example')
+    if 'chosen_example' in st.session_state.keys() and st.session_state['chosen_example'] is not None:
+        example_file_name = 'example' + str(st.session_state['chosen_example']) + ".json"
+        with open(example_file_name,'r') as json_input:
+            json_file = json.load(json_input)
+else:
+    json_file = json.load(json_input)
 
 st.divider()
 
 # Preprocessing
-if json_input:
-    json_file = json.load(json_input)
+if json_file is not None:
 
 # Clubbed properties
     c = pd.json_normalize(json_file,sep=',').T \
