@@ -1,12 +1,12 @@
+from os import name
 import streamlit as st
 import json
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Title
-st.title("JSON Counter")
+st.title("jsonalyzer")
 
 # Uploading the file
 st.header("Upload JSON File")
@@ -33,77 +33,150 @@ if json_input:
     st.header("Analysis")
 
 # Global options
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3 = st.columns([0.4,0.45,0.15])
+    with col1:
+        st.toggle("Remove empty columns",value=True,key="remove_empty_cols")
+    
+    def do_reset_filters():
+        if 'keep_columns' in st.session_state.keys():
+            del st.session_state['keep_columns']
+            st.session_state['keep_columns'] = d.columns.to_list()
+        if 'filter_columns' in st.session_state.keys():
+            del st.session_state['filter_columns']
+            st.session_state['filter_columns'] = []
+    
+    # Reset button
     with col3:
-            st.toggle("Remove empty columns",value=True,key="remove_empty_cols")
-        
+        st.button("Reset",key="reset_keep_columns",on_click=do_reset_filters)        
     
 # Display the filters common to all tabs
-    st.multiselect("Show columns",d.columns,d.columns,key="keep_columns")
+    st.multiselect("Show columns",options=d.columns,default=d.columns,key="keep_columns")
         
-    st.multiselect("Filter on :",d.columns,key="filter_columns")
+    st.multiselect("Filter on :",st.session_state['keep_columns'],key="filter_columns")
 
-    col1, col2 = st.columns([0.05,0.95])
+    col1, col2 = st.columns([0.2,0.8])
     for column in st.session_state.get("filter_columns",[]):
+        with col1:
+            st.selectbox("",options=["exclude","include"],key=f"{column}_filter_type")
         with col2:
-            st.multiselect(f"{column} filter",d[column].unique(),key=f"{column} filter")
-
-    def do_reset_filters():
-        if set(st.session_state['keep_columns']) != set(d.columns):
-            st.session_state['keep_columns'] = d.columns
-
-        st.session_state['filter_columns'] = []
-
-    st.button("Reset",key="reset_keep_columns",on_click=do_reset_filters)
+            st.multiselect(f"{column} filter",d[column].unique(),key=f"{column}_filter_value")
 
 # Process the filters 
-    table_view = d 
 
-    remove_empty_cols = st.session_state.get('remove_empty_cols',True)
-    if remove_empty_cols:
-        table_view = table_view.dropna(axis=1,how='all')
+    def process_filter(p_view):
+        for column in p_view.columns:
+            if column not in st.session_state.get("keep_columns",[]):
+                p_view = p_view.drop(column,axis=1)
+            else:
+                filter_columns = st.session_state.get("filter_columns")
+                filter_type = st.session_state.get(f"{column}_filter_type")
+                filter_value = st.session_state.get(f"{column}_filter_value",[])
+                if column in filter_columns:
+                    if filter_type == "exclude":
+                        p_view = p_view[~p_view[column].isin(filter_value)]
+                    else:
+                        p_view = p_view[p_view[column].isin(filter_value)]
 
-    for column in table_view.columns:
-        if column not in st.session_state.get("keep_columns",[]):
-            table_view = table_view.drop(column,axis=1)
-        else:
-            filter_value = st.session_state.get(f"{column} filter",[])
-            if filter_value:
-                table_view = table_view[table_view[column].isin(filter_value)]
+        remove_empty_cols = st.session_state.get('remove_empty_cols',True)
+        if remove_empty_cols:
+            p_view = p_view.dropna(axis=1,how='all')
+
+        return p_view
+
+    table_view = process_filter(d)
 
 # Display tabs
-    tab_raw, tab_plot = st.tabs(["Raw","Plot"])
+    tab_raw, tab_agg = st.tabs(["Raw","Aggregate"])
 
 # Content in Raw tab
     with tab_raw:
-        st.dataframe(table_view,use_container_width=True)
+        st.data_editor(table_view,use_container_width=True,key="table_view_edits")
 
-# Content in Plot tab
-    # Level of detail selection
-    with tab_plot:
+# Content in Aggregate tab
+    with tab_agg:
+        # Show plot
+        st.toggle('Show plot',value=False,key='show_plot')
+
+        # Level of detail selection
         st.selectbox("Level of detail",st.session_state['keep_columns'],key="lod")
 
-    # Top N elements selection
-        st.number_input('Select top N elements to display',
-                        min_value=1,
-                        value=10,
-                        key='topn')
+        # No of elements to display
+        col1, col2 = st.columns([0.3,0.7])
+        with col1:
+            st.selectbox("",options=['Descending','Ascending'],key='sorting_order')
+        if st.session_state['show_plot'] is True:
+            with col2:
+                st.select_slider("Choose number of elements to show",options=range(5,21,5),key='topn')
+        
+        if st.session_state['sorting_order'] == 'Ascending':
+            is_ascending = True
+        else:
+            is_ascending = False
 
-    # Process data in plot view
-    plot_view = table_view.copy()
-    for column in plot_view.columns:
-        if "Level" in column:
-            i = int(column.split(" ")[1]) - 1
+        # Add new column fields
+        # with st.form(key='new_col_form'):
+        #     col1, col2 = st.columns(2,vertical_alignment='center')  
+        #     with col1:
+        #         st.text_input('',key=f"new_col")
             
-            if f"Level {i}" in plot_view.columns:
-                plot_view[column].fillna("",inplace=True)
-                plot_view[column] = plot_view[f"Level {i}"] + "." + plot_view[column] # change something here 
+        #     st.form_submit_button("Add new column")    
+
+        # Preprocessing table levels to add preceding qualifier
+        _view = table_view.copy()
+
+        def combine_rows(x):
+            if x[1] is not None:
+                return x[0] + "." + x[1]
+            else:
+                return x[0]
+
+        for column in _view.columns:
+            if "Level" in column:
+                prev_level = int(column.split(" ")[1]) - 1
+                while (prev_level > 0):
+                    if f"Level {prev_level}" in _view.columns:
+                        _view[column] = _view[[f"Level {prev_level}",column]].apply(combine_rows,axis=1)
+                        break
+                    else:
+                        prev_level -= 1
+
+        agg_view = _view.groupby(st.session_state["lod"]).size().rename('Count').sort_values(ascending=is_ascending)
+
+        # if not st.session_state['new_col'] != '':
+        #     st.write('something is done')
+        #     agg_view = pd.concat([agg_view,pd.Series(name=st.session_state['new_col'])],axis=1)
+        #     st.data_editor(agg_view, use_container_width=True,key="agg_view_edits")
+        # else:
+        #     st.data_editor(agg_view, use_container_width=True, key="agg_view_edits")
+
+        if st.session_state['show_plot'] is True:
+            plot_view = agg_view[:st.session_state['topn']]
+            sns.set_style('white')
+            fig, ax = plt.subplots()
+            sns.barplot(y=plot_view.index,x=plot_view.values,ax=ax)
+            sns.despine()
+            st.pyplot(fig=fig)
+        else:
+            st.data_editor(agg_view,use_container_width=True, key="agg_view_edits")
+
+# Content in Plot tab
+    # with tab_plot:
+    # # Level of detail selection
+    
+    # # Top N elements selection
+    #     st.number_input('Select top N elements to display',
+    #                     min_value=1,
+    #                     value=10,
+    #                     key='topn')
+
+    # # Process data in plot view
+    
                 
-    lod = st.session_state.get("lod",None)
-    with tab_plot:
-        if lod:
-            plot_data = plot_view.groupby(lod,dropna=False).size().reset_index(name="Count")
-            st.bar_chart(plot_data,y="Count",x=lod,horizontal=True)
+    # lod = st.session_state.get("lod",None)
+    # with tab_plot:
+    #     if lod:
+    #         plot_data = _view.groupby(lod,dropna=False).size().reset_index(name="Count")
+    #         st.bar_chart(plot_data,y="Count",x=lod,horizontal=True)
 
     # Display table
     # show_freq = st.session_state.get('show_freq',False)
