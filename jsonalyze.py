@@ -150,7 +150,7 @@ if json_input:
 
         if st.session_state['show_plot'] is True:
             plot_view = agg_view[:st.session_state['topn']]
-            sns.set_style('white')
+            sns.set_theme(style='white',palette='pastel')
             fig, ax = plt.subplots()
             sns.barplot(y=plot_view.index,x=plot_view.values,ax=ax)
             sns.despine()
@@ -158,29 +158,4 @@ if json_input:
         else:
             st.data_editor(agg_view,use_container_width=True, key="agg_view_edits")
 
-# Content in Plot tab
-    # with tab_plot:
-    # # Level of detail selection
-    
-    # # Top N elements selection
-    #     st.number_input('Select top N elements to display',
-    #                     min_value=1,
-    #                     value=10,
-    #                     key='topn')
-
-    # # Process data in plot view
-    
-                
-    # lod = st.session_state.get("lod",None)
-    # with tab_plot:
-    #     if lod:
-    #         plot_data = _view.groupby(lod,dropna=False).size().reset_index(name="Count")
-    #         st.bar_chart(plot_data,y="Count",x=lod,horizontal=True)
-
-    # Display table
-    # show_freq = st.session_state.get('show_freq',False)
-    # if show_freq:
-    #     st.dataframe(table_view.value_counts(dropna=False),use_container_width=True)
-    # else:
-    #     st.dataframe(table_view,use_container_width=True)
 
